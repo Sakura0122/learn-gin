@@ -1,0 +1,23 @@
+# 编译出来的二进制文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE 配置文件
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# 依赖目录（如果用了 vendor）
+/vendor/
+
+# 测试覆盖率文件
+coverage.out
+
+# 环境变量文件（可能有密码）
+.env
