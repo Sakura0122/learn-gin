@@ -3,9 +3,11 @@ package article
 import "github.com/gin-gonic/gin"
 
 func RegisterRoutes(r *gin.RouterGroup, handler *Handler) {
-	r.POST("/articles", handler.Create)
-	r.GET("/articles/:id", handler.GetByID)
-	r.GET("/articles", handler.List)
-	r.PUT("/articles/:id", handler.Update)
-	r.DELETE("/articles/:id", handler.Delete)
+	articles := r.Group("/articles")
+
+	articles.POST("", handler.Create)
+	articles.GET("/:id", handler.GetByID)
+	articles.GET("", handler.List)
+	articles.PUT("/:id", handler.Update)
+	articles.DELETE("/:id", handler.Delete)
 }

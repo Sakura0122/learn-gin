@@ -4,8 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"learn-gin/internal/api/article"
-	"learn-gin/internal/api/user"
+	"learn-gin/internal/api"
 	"learn-gin/internal/config"
 	"learn-gin/internal/infra/database"
 
@@ -26,9 +25,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
-	api := router.Group("/api/v1")
-	user.RegisterRoutes(api, user.NewHandler(user.NewService(db)))
-	article.RegisterRoutes(api, article.NewHandler(article.NewService(db)))
+	api.RegisterRoutes(router, db)
 
 	if err := router.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatalf("server start failed: %v", err)
