@@ -8,6 +8,7 @@ import (
 	"learn-gin/internal/common/result"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -40,13 +41,13 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
 		return
 	}
 
-	a, err := h.service.GetByID(uint(id))
+	a, err := h.service.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "article not found"))
@@ -59,7 +60,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 }
 
 func (h *Handler) List(c *gin.Context) {
-	userID, _ := strconv.ParseUint(c.Query("user_id"), 10, 64)
+	userID, _ := uuid.Parse(c.Query("user_id"))
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	if page < 1 {
@@ -69,7 +70,7 @@ func (h *Handler) List(c *gin.Context) {
 		pageSize = 10
 	}
 
-	list, total, err := h.service.List(uint(userID), page, pageSize)
+	list, total, err := h.service.List(userID, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
 		return
@@ -83,7 +84,7 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 func (h *Handler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
 		return
@@ -95,7 +96,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	a, err := h.service.Update(uint(id), req)
+	a, err := h.service.Update(id, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "article not found"))
@@ -108,13 +109,13 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 func (h *Handler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
 		return
 	}
 
-	if err := h.service.Delete(uint(id)); err != nil {
+	if err := h.service.Delete(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "article not found"))
 			return

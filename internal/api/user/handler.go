@@ -8,6 +8,7 @@ import (
 	"learn-gin/internal/common/result"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -40,13 +41,13 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
 		return
 	}
 
-	u, err := h.service.GetByID(uint(id))
+	u, err := h.service.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "user not found"))
@@ -82,7 +83,7 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 func (h *Handler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
 		return
@@ -94,7 +95,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	u, err := h.service.Update(uint(id), req)
+	u, err := h.service.Update(id, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "user not found"))
@@ -107,13 +108,13 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 func (h *Handler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
 		return
 	}
 
-	if err := h.service.Delete(uint(id)); err != nil {
+	if err := h.service.Delete(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "user not found"))
 			return

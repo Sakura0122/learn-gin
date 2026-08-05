@@ -1,17 +1,17 @@
 package user
 
-import "learn-gin/internal/infra/database"
+import "github.com/google/uuid"
 
 type UserResponse struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Nickname string `json:"nickname"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Status   int    `json:"status"`
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Nickname string    `json:"nickname"`
+	Email    string    `json:"email"`
+	Phone    string    `json:"phone"`
+	Status   int       `json:"status"`
 }
 
-func toUserResponse(u *database.User) UserResponse {
+func toUserResponse(u *User) UserResponse {
 	return UserResponse{
 		ID:       u.ID,
 		Username: u.Username,
@@ -22,7 +22,7 @@ func toUserResponse(u *database.User) UserResponse {
 	}
 }
 
-func toUserResponseList(list []database.User) []UserResponse {
+func toUserResponseList(list []User) []UserResponse {
 	res := make([]UserResponse, 0, len(list))
 	for i := range list {
 		res = append(res, toUserResponse(&list[i]))

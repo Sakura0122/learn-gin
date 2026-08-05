@@ -1,20 +1,18 @@
 package article
 
-import (
-	"learn-gin/internal/infra/database"
-)
+import "github.com/google/uuid"
 
 type ArticleResponse struct {
-	ID        uint   `json:"id"`
-	UserID    uint   `json:"user_id"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	Status    int    `json:"status"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	Status    int       `json:"status"`
+	CreatedAt string    `json:"created_at"`
+	UpdatedAt string    `json:"updated_at"`
 }
 
-func toArticleResponse(a *database.Article) ArticleResponse {
+func toArticleResponse(a *Article) ArticleResponse {
 	return ArticleResponse{
 		ID:        a.ID,
 		UserID:    a.UserID,
@@ -26,7 +24,7 @@ func toArticleResponse(a *database.Article) ArticleResponse {
 	}
 }
 
-func toArticleResponseList(list []database.Article) []ArticleResponse {
+func toArticleResponseList(list []Article) []ArticleResponse {
 	res := make([]ArticleResponse, 0, len(list))
 	for i := range list {
 		res = append(res, toArticleResponse(&list[i]))

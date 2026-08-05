@@ -6,7 +6,7 @@ USE `learn_gin`;
 -- 用户表
 DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
-    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `id`         CHAR(36)        NOT NULL COMMENT '主键（UUID）',
     `username`   VARCHAR(64)     NOT NULL COMMENT '用户名',
     `password`   VARCHAR(128)    NOT NULL COMMENT '密码',
     `nickname`   VARCHAR(64)     NOT NULL DEFAULT '' COMMENT '昵称',
@@ -24,8 +24,8 @@ CREATE TABLE `user` (
 -- 文章表
 DROP TABLE IF EXISTS `article`;
 CREATE TABLE `article` (
-    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `user_id`    BIGINT UNSIGNED NOT NULL COMMENT '作者ID',
+    `id`         CHAR(36)        NOT NULL COMMENT '主键（UUID）',
+    `user_id`    CHAR(36)        NOT NULL COMMENT '作者ID',
     `title`      VARCHAR(128)    NOT NULL COMMENT '标题',
     `content`    TEXT            COMMENT '正文内容',
     `status`     TINYINT         NOT NULL DEFAULT 1 COMMENT '状态：0草稿 1已发布',
