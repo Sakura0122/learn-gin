@@ -2,10 +2,9 @@ package article
 
 import (
 	"errors"
+	"learn-gin/internal/common"
 	"net/http"
 	"strconv"
-
-	"learn-gin/internal/common/result"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -23,7 +22,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateArticleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, err.Error()))
 		return
 	}
 
@@ -31,32 +30,32 @@ func (h *Handler) Create(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, err.Error()))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, err.Error()))
 		default:
-			c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+			c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		}
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(toArticleResponse(a)))
+	c.JSON(http.StatusOK, common.Success(toArticleResponse(a)))
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
 		return
 	}
 
 	a, err := h.service.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "article not found"))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "article not found"))
 			return
 		}
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(toArticleResponse(a)))
+	c.JSON(http.StatusOK, common.Success(toArticleResponse(a)))
 }
 
 func (h *Handler) List(c *gin.Context) {
@@ -72,10 +71,10 @@ func (h *Handler) List(c *gin.Context) {
 
 	list, total, err := h.service.List(userID, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(gin.H{
+	c.JSON(http.StatusOK, common.Success(gin.H{
 		"list":      toArticleResponseList(list),
 		"total":     total,
 		"page":      page,
@@ -86,42 +85,42 @@ func (h *Handler) List(c *gin.Context) {
 func (h *Handler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
 		return
 	}
 
 	var req UpdateArticleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, err.Error()))
 		return
 	}
 
 	a, err := h.service.Update(id, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "article not found"))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "article not found"))
 			return
 		}
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(toArticleResponse(a)))
+	c.JSON(http.StatusOK, common.Success(toArticleResponse(a)))
 }
 
 func (h *Handler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
 		return
 	}
 
 	if err := h.service.Delete(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "article not found"))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "article not found"))
 			return
 		}
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(nil))
+	c.JSON(http.StatusOK, common.Success(nil))
 }

@@ -2,10 +2,9 @@ package user
 
 import (
 	"errors"
+	"learn-gin/internal/common"
 	"net/http"
 	"strconv"
-
-	"learn-gin/internal/common/result"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -23,7 +22,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, err.Error()))
 		return
 	}
 
@@ -31,32 +30,32 @@ func (h *Handler) Create(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUsernameExists):
-			c.JSON(http.StatusOK, result.Error(result.CodeError, err.Error()))
+			c.JSON(http.StatusOK, common.Error(common.CodeError, err.Error()))
 		default:
-			c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+			c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		}
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(toUserResponse(u)))
+	c.JSON(http.StatusOK, common.Success(toUserResponse(u)))
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
 		return
 	}
 
 	u, err := h.service.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "user not found"))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "user not found"))
 			return
 		}
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(toUserResponse(u)))
+	c.JSON(http.StatusOK, common.Success(toUserResponse(u)))
 }
 
 func (h *Handler) List(c *gin.Context) {
@@ -71,10 +70,10 @@ func (h *Handler) List(c *gin.Context) {
 
 	list, total, err := h.service.List(page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(gin.H{
+	c.JSON(http.StatusOK, common.Success(gin.H{
 		"list":      toUserResponseList(list),
 		"total":     total,
 		"page":      page,
@@ -85,42 +84,42 @@ func (h *Handler) List(c *gin.Context) {
 func (h *Handler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
 		return
 	}
 
 	var req UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, err.Error()))
 		return
 	}
 
 	u, err := h.service.Update(id, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "user not found"))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "user not found"))
 			return
 		}
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(toUserResponse(u)))
+	c.JSON(http.StatusOK, common.Success(toUserResponse(u)))
 }
 
 func (h *Handler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, result.Error(result.CodeParamError, "invalid id"))
+		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
 		return
 	}
 
 	if err := h.service.Delete(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, result.Error(result.CodeNotFound, "user not found"))
+			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "user not found"))
 			return
 		}
-		c.JSON(http.StatusOK, result.Error(result.CodeServerError, err.Error()))
+		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(nil))
+	c.JSON(http.StatusOK, common.Success(nil))
 }

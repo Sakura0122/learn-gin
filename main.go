@@ -16,18 +16,18 @@ func main() {
 
 	db, err := database.New(cfg)
 	if err != nil {
-		log.Fatalf("connect database failed: %v", err)
+		log.Fatalf("连接数据库失败：%v", err)
 	}
-	log.Printf("database connected: %s", cfg.DSN())
+	log.Print("数据库连接成功")
 
 	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "pong"})
+	router.GET("/api/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
 
 	api.RegisterRoutes(router, db)
 
 	if err := router.Run(":" + cfg.ServerPort); err != nil {
-		log.Fatalf("server start failed: %v", err)
+		log.Fatalf("服务启动失败：%v", err)
 	}
 }

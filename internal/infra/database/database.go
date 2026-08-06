@@ -9,20 +9,12 @@ import (
 )
 
 func New(cfg *config.Config) (*gorm.DB, error) {
-	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+	logLevel := logger.Info
+	if cfg.AppEnv == "production" {
+		logLevel = logger.Warn
+	}
+
+	return gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{
+		Logger: logger.Default.LogMode(logLevel),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, err
-	}
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetMaxIdleConns(20)
-	sqlDB.SetConnMaxLifetime(0)
-
-	return db, nil
 }
