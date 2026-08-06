@@ -9,6 +9,8 @@ import (
 
 type Config struct {
 	AppEnv     string
+	GinMode    string
+	LogDir     string
 	ServerPort string
 	DBHost     string
 	DBPort     string
@@ -22,6 +24,8 @@ func Load() *Config {
 
 	return &Config{
 		AppEnv:     getEnv("APP_ENV", "development"),
+		GinMode:    getEnv("GIN_MODE", "release"),
+		LogDir:     getEnv("LOG_DIR", "log"),
 		ServerPort: getEnv("SERVER_PORT", "8080"),
 		DBHost:     getEnv("DB_HOST", "127.0.0.1"),
 		DBPort:     getEnv("DB_PORT", "3306"),

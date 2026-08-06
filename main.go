@@ -1,33 +1,32 @@
 package main
 
 import (
-	"log"
-	"net/http"
+	"fmt"
 
 	"learn-gin/internal/api"
 	"learn-gin/internal/config"
 	"learn-gin/internal/infra/database"
+	"learn-gin/internal/infra/logging"
 
-	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
 	cfg := config.Load()
-
-	db, err := database.New(cfg)
+	appLogger, err := logging.New(cfg.AppEnv, cfg.LogDir)
 	if err != nil {
-		log.Fatalf("连接数据库失败：%v", err)
+		panic(fmt.Sprintf("初始化日志失败：%v", err))
 	}
-	log.Print("数据库连接成功")
+	defer appLogger.Sync()
 
-	router := gin.Default()
-	router.GET("/api/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "success"})
-	})
+	db, err := database.New(cfg, appLogger)
+	if err != nil {
+		appLogger.Fatal("连接数据库失败", zap.Error(err))
+	}
+	appLogger.Info("数据库连接成功")
 
-	api.RegisterRoutes(router, db)
-
+	router := api.NewRouter(cfg.GinMode, appLogger, db)
 	if err := router.Run(":" + cfg.ServerPort); err != nil {
-		log.Fatalf("服务启动失败：%v", err)
+		appLogger.Fatal("服务启动失败", zap.Error(err))
 	}
 }
