@@ -4,13 +4,22 @@ import (
 	"errors"
 
 	"learn-gin/internal/api/user"
+	"learn-gin/internal/common/page"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound   = errors.New("用户不存在")
+	articleSortFields = map[string]string{
+		"id":         "id",
+		"user_id":    "user_id",
+		"title":      "title",
+		"status":     "status",
+		"created_at": "created_at",
+		"updated_at": "updated_at",
+	}
 )
 
 type Service struct {
@@ -49,7 +58,12 @@ func (s *Service) GetByID(id uuid.UUID) (*Article, error) {
 	return &a, nil
 }
 
-func (s *Service) List(userID uuid.UUID, page, pageSize int) ([]Article, int64, error) {
+func (s *Service) List(userID uuid.UUID, pageRequest page.Request) ([]Article, int64, error) {
+	orderBy, err := pageRequest.OrderBy(articleSortFields, "id DESC")
+	if err != nil {
+		return nil, 0, err
+	}
+
 	var (
 		list  []Article
 		total int64
@@ -61,7 +75,7 @@ func (s *Service) List(userID uuid.UUID, page, pageSize int) ([]Article, int64, 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := query.Offset((page - 1) * pageSize).Limit(pageSize).Order("id DESC").Find(&list).Error; err != nil {
+	if err := query.Offset(pageRequest.Offset()).Limit(pageRequest.PageSize).Order(orderBy).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	return list, total, nil

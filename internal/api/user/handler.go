@@ -2,9 +2,8 @@ package user
 
 import (
 	"errors"
-	"learn-gin/internal/common"
-	"net/http"
-	"strconv"
+	"learn-gin/internal/common/page"
+	"learn-gin/internal/common/result"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -22,7 +21,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, common.Error(common.CodeParamError, err.Error()))
+		result.Error(result.CodeParamError, "请求参数错误", c)
 		return
 	}
 
@@ -30,96 +29,92 @@ func (h *Handler) Create(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUsernameExists):
-			c.JSON(http.StatusOK, common.Error(common.CodeError, err.Error()))
+			result.Error(result.CodeError, "用户名已存在", c)
 		default:
-			c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
+			result.Error(result.CodeServerError, "服务器内部错误", c)
 		}
 		return
 	}
-	c.JSON(http.StatusOK, common.Success(toUserResponse(u)))
+	result.Success(toUserResponse(u), c)
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
+		result.Error(result.CodeParamError, "ID格式错误", c)
 		return
 	}
 
 	u, err := h.service.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "user not found"))
+			result.Error(result.CodeNotFound, "用户不存在", c)
 			return
 		}
-		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
+		result.Error(result.CodeServerError, "服务器内部错误", c)
 		return
 	}
-	c.JSON(http.StatusOK, common.Success(toUserResponse(u)))
+	result.Success(toUserResponse(u), c)
 }
 
 func (h *Handler) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 10
-	}
-
-	list, total, err := h.service.List(page, pageSize)
+	pageRequest, err := page.Parse(c)
 	if err != nil {
-		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
+		result.Error(result.CodeParamError, "分页参数错误", c)
 		return
 	}
-	c.JSON(http.StatusOK, common.Success(gin.H{
-		"list":      toUserResponseList(list),
-		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
-	}))
+
+	list, total, err := h.service.List(pageRequest)
+	if err != nil {
+		if errors.Is(err, page.ErrUnsupportedSortField) {
+			result.Error(result.CodeParamError, err.Error(), c)
+			return
+		}
+		result.Error(result.CodeServerError, "服务器内部错误", c)
+		return
+	}
+	result.Success(page.NewResult(pageRequest, total, toUserResponseList(list)), c)
 }
 
 func (h *Handler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
+		result.Error(result.CodeParamError, "ID格式错误", c)
 		return
 	}
 
 	var req UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, common.Error(common.CodeParamError, err.Error()))
+		result.Error(result.CodeParamError, "请求参数错误", c)
 		return
 	}
 
 	u, err := h.service.Update(id, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "user not found"))
+			result.Error(result.CodeNotFound, "用户不存在", c)
 			return
 		}
-		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
+		result.Error(result.CodeServerError, "服务器内部错误", c)
 		return
 	}
-	c.JSON(http.StatusOK, common.Success(toUserResponse(u)))
+	result.Success(toUserResponse(u), c)
 }
 
 func (h *Handler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, common.Error(common.CodeParamError, "invalid id"))
+		result.Error(result.CodeParamError, "ID格式错误", c)
 		return
 	}
 
 	if err := h.service.Delete(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, common.Error(common.CodeNotFound, "user not found"))
+			result.Error(result.CodeNotFound, "用户不存在", c)
 			return
 		}
-		c.JSON(http.StatusOK, common.Error(common.CodeServerError, err.Error()))
+		result.Error(result.CodeServerError, "服务器内部错误", c)
 		return
 	}
-	c.JSON(http.StatusOK, common.Success(nil))
+	result.Success(nil, c)
 }

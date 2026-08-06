@@ -2,13 +2,21 @@ package user
 
 import (
 	"errors"
+	"learn-gin/internal/common/page"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 var (
-	ErrUsernameExists = errors.New("username already exists")
+	ErrUsernameExists = errors.New("用户名已存在")
+	userSortFields    = map[string]string{
+		"id":         "id",
+		"username":   "username",
+		"status":     "status",
+		"created_at": "created_at",
+		"updated_at": "updated_at",
+	}
 )
 
 type Service struct {
@@ -49,7 +57,12 @@ func (s *Service) GetByID(id uuid.UUID) (*User, error) {
 	return &u, nil
 }
 
-func (s *Service) List(page, pageSize int) ([]User, int64, error) {
+func (s *Service) List(pageRequest page.Request) ([]User, int64, error) {
+	orderBy, err := pageRequest.OrderBy(userSortFields, "id DESC")
+	if err != nil {
+		return nil, 0, err
+	}
+
 	var (
 		list  []User
 		total int64
@@ -57,7 +70,7 @@ func (s *Service) List(page, pageSize int) ([]User, int64, error) {
 	if err := s.db.Model(&User{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := s.db.Offset((page - 1) * pageSize).Limit(pageSize).Order("id DESC").Find(&list).Error; err != nil {
+	if err := s.db.Offset(pageRequest.Offset()).Limit(pageRequest.PageSize).Order(orderBy).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	return list, total, nil
