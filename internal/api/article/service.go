@@ -1,6 +1,7 @@
 package article
 
 import (
+	"context"
 	"errors"
 
 	"learn-gin/internal/api/user"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -30,9 +32,9 @@ func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
-func (s *Service) Create(req CreateArticleRequest) (*Article, error) {
-	var count int64
-	if err := s.db.Model(&user.User{}).Where("id = ?", req.UserID).Count(&count).Error; err != nil {
+func (s *Service) Create(ctx context.Context, req CreateArticleRequest) (*Article, error) {
+	count, err := gorm.G[user.User](s.db).Where("id = ?", req.UserID).Count(ctx, "*")
+	if err != nil {
 		return nil, err
 	}
 	if count == 0 {
@@ -44,45 +46,47 @@ func (s *Service) Create(req CreateArticleRequest) (*Article, error) {
 		Title:   req.Title,
 		Content: req.Content,
 	}
-	if err := s.db.Create(&a).Error; err != nil {
+	if err := gorm.G[Article](s.db).Create(ctx, &a); err != nil {
 		return nil, err
 	}
 	return &a, nil
 }
 
-func (s *Service) GetByID(id uuid.UUID) (*Article, error) {
-	var a Article
-	if err := s.db.First(&a, "id = ?", id).Error; err != nil {
+func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*Article, error) {
+	a, err := gorm.G[Article](s.db).Where("id = ?", id).First(ctx)
+	if err != nil {
 		return nil, err
 	}
 	return &a, nil
 }
 
-func (s *Service) List(userID uuid.UUID, pageRequest page.Request) ([]Article, int64, error) {
+func (s *Service) List(ctx context.Context, userID uuid.UUID, pageRequest page.Request) ([]Article, int64, error) {
 	orderBy, err := pageRequest.OrderBy(articleSortFields, "id DESC")
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var (
-		list  []Article
-		total int64
-	)
-	query := s.db.Model(&Article{})
+	query := gorm.G[Article](s.db).Where("1 = 1")
 	if userID != uuid.Nil {
 		query = query.Where("user_id = ?", userID)
 	}
-	if err := query.Count(&total).Error; err != nil {
+	total, err := query.Count(ctx, "*")
+	if err != nil {
 		return nil, 0, err
 	}
-	if err := query.Offset(pageRequest.Offset()).Limit(pageRequest.PageSize).Order(orderBy).Find(&list).Error; err != nil {
+	list, err := query.
+		Offset(pageRequest.Offset()).
+		Limit(pageRequest.PageSize).
+		Order(orderBy).
+		Find(ctx)
+	if err != nil {
 		return nil, 0, err
 	}
 	return list, total, nil
 }
 
-func (s *Service) Update(id uuid.UUID, req UpdateArticleRequest) (*Article, error) {
-	if _, err := s.GetByID(id); err != nil {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, req UpdateArticleRequest) (*Article, error) {
+	if _, err := s.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
 
@@ -97,16 +101,20 @@ func (s *Service) Update(id uuid.UUID, req UpdateArticleRequest) (*Article, erro
 		updates["status"] = *req.Status
 	}
 	if len(updates) > 0 {
-		if err := s.db.Model(&Article{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		if _, err := gorm.G[Article](s.db).
+			Where("id = ?", id).
+			Set(clause.Assignments(updates)).
+			Update(ctx); err != nil {
 			return nil, err
 		}
 	}
-	return s.GetByID(id)
+	return s.GetByID(ctx, id)
 }
 
-func (s *Service) Delete(id uuid.UUID) error {
-	if _, err := s.GetByID(id); err != nil {
+func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+	if _, err := s.GetByID(ctx, id); err != nil {
 		return err
 	}
-	return s.db.Delete(&Article{}, "id = ?", id).Error
+	_, err := gorm.G[Article](s.db).Where("id = ?", id).Delete(ctx)
+	return err
 }

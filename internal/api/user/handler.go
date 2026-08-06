@@ -25,7 +25,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	u, err := h.service.Create(req)
+	u, err := h.service.Create(c.Request.Context(), req)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUsernameExists):
@@ -45,7 +45,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	u, err := h.service.GetByID(id)
+	u, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			result.Error(result.CodeNotFound, "用户不存在", c)
@@ -64,7 +64,7 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
-	list, total, err := h.service.List(pageRequest)
+	list, total, err := h.service.List(c.Request.Context(), pageRequest)
 	if err != nil {
 		if errors.Is(err, page.ErrUnsupportedSortField) {
 			result.Error(result.CodeParamError, err.Error(), c)
@@ -89,7 +89,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	u, err := h.service.Update(id, req)
+	u, err := h.service.Update(c.Request.Context(), id, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			result.Error(result.CodeNotFound, "用户不存在", c)
@@ -108,7 +108,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Delete(id); err != nil {
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			result.Error(result.CodeNotFound, "用户不存在", c)
 			return

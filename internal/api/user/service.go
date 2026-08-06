@@ -1,11 +1,13 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"learn-gin/internal/common/page"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -27,9 +29,9 @@ func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
-func (s *Service) Create(req CreateUserRequest) (*User, error) {
-	var count int64
-	if err := s.db.Model(&User{}).Where("username = ?", req.Username).Count(&count).Error; err != nil {
+func (s *Service) Create(ctx context.Context, req CreateUserRequest) (*User, error) {
+	count, err := gorm.G[User](s.db).Where("username = ?", req.Username).Count(ctx, "*")
+	if err != nil {
 		return nil, err
 	}
 	if count > 0 {
@@ -43,41 +45,43 @@ func (s *Service) Create(req CreateUserRequest) (*User, error) {
 		Email:    req.Email,
 		Phone:    req.Phone,
 	}
-	if err := s.db.Create(&u).Error; err != nil {
+	if err := gorm.G[User](s.db).Create(ctx, &u); err != nil {
 		return nil, err
 	}
 	return &u, nil
 }
 
-func (s *Service) GetByID(id uuid.UUID) (*User, error) {
-	var u User
-	if err := s.db.First(&u, "id = ?", id).Error; err != nil {
+func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
+	u, err := gorm.G[User](s.db).Where("id = ?", id).First(ctx)
+	if err != nil {
 		return nil, err
 	}
 	return &u, nil
 }
 
-func (s *Service) List(pageRequest page.Request) ([]User, int64, error) {
+func (s *Service) List(ctx context.Context, pageRequest page.Request) ([]User, int64, error) {
 	orderBy, err := pageRequest.OrderBy(userSortFields, "id DESC")
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var (
-		list  []User
-		total int64
-	)
-	if err := s.db.Model(&User{}).Count(&total).Error; err != nil {
+	total, err := gorm.G[User](s.db).Count(ctx, "*")
+	if err != nil {
 		return nil, 0, err
 	}
-	if err := s.db.Offset(pageRequest.Offset()).Limit(pageRequest.PageSize).Order(orderBy).Find(&list).Error; err != nil {
+	list, err := gorm.G[User](s.db).
+		Offset(pageRequest.Offset()).
+		Limit(pageRequest.PageSize).
+		Order(orderBy).
+		Find(ctx)
+	if err != nil {
 		return nil, 0, err
 	}
 	return list, total, nil
 }
 
-func (s *Service) Update(id uuid.UUID, req UpdateUserRequest) (*User, error) {
-	if _, err := s.GetByID(id); err != nil {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, req UpdateUserRequest) (*User, error) {
+	if _, err := s.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
 
@@ -95,16 +99,20 @@ func (s *Service) Update(id uuid.UUID, req UpdateUserRequest) (*User, error) {
 		updates["status"] = *req.Status
 	}
 	if len(updates) > 0 {
-		if err := s.db.Model(&User{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		if _, err := gorm.G[User](s.db).
+			Where("id = ?", id).
+			Set(clause.Assignments(updates)).
+			Update(ctx); err != nil {
 			return nil, err
 		}
 	}
-	return s.GetByID(id)
+	return s.GetByID(ctx, id)
 }
 
-func (s *Service) Delete(id uuid.UUID) error {
-	if _, err := s.GetByID(id); err != nil {
+func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+	if _, err := s.GetByID(ctx, id); err != nil {
 		return err
 	}
-	return s.db.Delete(&User{}, "id = ?", id).Error
+	_, err := gorm.G[User](s.db).Where("id = ?", id).Delete(ctx)
+	return err
 }
